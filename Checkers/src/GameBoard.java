@@ -10,12 +10,33 @@
 public class GameBoard extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(GameBoard.class.getName());
+    private javax.swing.JLabel[][] labelGrid = new javax.swing.JLabel[8][8];
+    private GameLogic logic = new GameLogic();
+    private int selectedRow = -1;
+    private int selectedColumn = -1;
 
     /**
      * Creates new form GameBoard
      */
     public GameBoard() {
         initComponents();
+        mapLabelsToGrid(); // map the labels into an array
+        
+        // This loop makes every square on your board clickable
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                final int row = r;
+                final int col = c;
+                labelGrid[r][c].addMouseListener(new java.awt.event.MouseAdapter() {
+                    @Override
+                    public void mouseClicked(java.awt.event.MouseEvent evt) {
+                        handleSquareClick(row, col);
+                    }
+                });
+            }
+        }
+        
+        refreshBoardDisplay();
     }
 
     /**
@@ -370,6 +391,80 @@ public class GameBoard extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void mapLabelsToGrid() {
+        // We fetch the components from the panel where you placed the 64 labels
+        java.awt.Component[] allComponents = jPanel1.getComponents();
+        int componentIndex = 0;
+        
+        for (int row = 0; row < 8; row++) {
+            for (int column = 0; column < 8; column++) {
+                // Cast the generic component to a JLabel and store it in our 2D array
+                labelGrid[row][column] = (javax.swing.JLabel) allComponents[componentIndex++];
+                
+                // Visual Setup for the checkerboard pattern
+                if ((row + column) % 2 != 0) {
+                    labelGrid[row][column].setBackground(java.awt.Color.DARK_GRAY);
+                } else {
+                    labelGrid[row][column].setBackground(java.awt.Color.LIGHT_GRAY);
+                }
+            }
+        }
+    }
+
+    public void refreshBoardDisplay() {
+        Piece[][] currentBoardState = logic.getBoard();
+        for (int row = 0; row < 8; row++) {
+            for (int column = 0; column < 8; column++) {
+                Piece pieceAtLocation = currentBoardState[row][column];
+                
+                if (pieceAtLocation != null) {
+                    // Update this path once your Krita assets are in your project folder
+                    // String imagePath = "/assets/" + pieceAtLocation.getIconName();
+                    // labelGrid[row][column].setIcon(new javax.swing.ImageIcon(getClass().getResource(imagePath)));
+                    labelGrid[row][column].setText(pieceAtLocation.isRed() ? "RED" : "BLACK");
+                } else {
+                    labelGrid[row][column].setIcon(null);
+                    labelGrid[row][column].setText("");
+                }
+            }
+        }
+    }
+    
+    private void handleSquareClick(int currentRow, int currentColumn) {
+        // First click: Selecting the piece
+        if (selectedRow == -1) {
+            Piece pieceAtClick = logic.getBoard()[currentRow][currentColumn];
+            
+            if (pieceAtClick != null && pieceAtClick.isRed() == logic.isRedTurn()) {
+                selectedRow = currentRow;
+                selectedColumn = currentColumn;
+                highlightValidMoves(currentRow, currentColumn);
+            }
+        } 
+        // Second click: Moving the piece
+        else {
+            java.util.List<java.awt.Point> validDestinations = logic.getValidDestinations(selectedRow, selectedColumn);
+            boolean isMoveValid = false;
+
+            for (java.awt.Point p : validDestinations) {
+                if (p.y == currentRow && p.x == currentColumn) {
+                    isMoveValid = true;
+                    break;
+                }
+            }
+
+            if (isMoveValid) {
+                logic.movePiece(selectedRow, selectedColumn, currentRow, currentColumn);
+                logic.toggleTurn();
+                refreshBoardDisplay();
+            }
+
+            clearHighlights();
+            selectedRow = -1;
+            selectedColumn = -1;
+        }
+    }
+    
     /**
      * @param args the command line arguments
      */
@@ -393,6 +488,30 @@ public class GameBoard extends javax.swing.JFrame {
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(() -> new GameBoard().setVisible(true));
+    }
+    
+    private void highlightValidMoves(int row, int col) {
+        java.util.List<java.awt.Point> moves = logic.getValidDestinations(row, col);
+        // Highlight the origin square
+        labelGrid[row][col].setBackground(new java.awt.Color(100, 149, 237)); // Cornflower Blue
+        
+        // Highlight the potential destinations
+        for (java.awt.Point p : moves) {
+            // In Point, x is column and y is row
+            labelGrid[p.y][p.x].setBackground(new java.awt.Color(173, 216, 230)); // Light Blue
+        }
+    }
+
+    private void clearHighlights() {
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                if ((row + col) % 2 != 0) {
+                    labelGrid[row][col].setBackground(java.awt.Color.DARK_GRAY);
+                } else {
+                    labelGrid[row][col].setBackground(java.awt.Color.LIGHT_GRAY);
+                }
+            }
+        }
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
