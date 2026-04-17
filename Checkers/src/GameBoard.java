@@ -419,8 +419,8 @@ public class GameBoard extends javax.swing.JFrame {
                 
                 if (pieceAtLocation != null) {
                     // Update this path once your Krita assets are in your project folder
-                    // String imagePath = "/assets/" + pieceAtLocation.getIconName();
-                    // labelGrid[row][column].setIcon(new javax.swing.ImageIcon(getClass().getResource(imagePath)));
+                    String imagePath = "/assets/" + pieceAtLocation.getIconName();
+                    labelGrid[row][column].setIcon(new javax.swing.ImageIcon(getClass().getResource(imagePath)));
                     labelGrid[row][column].setText(pieceAtLocation.isRed() ? "RED" : "BLACK");
                 } else {
                     labelGrid[row][column].setIcon(null);
