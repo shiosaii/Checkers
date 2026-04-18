@@ -5,7 +5,7 @@
 
 /**
  *
- * @author shiosaii & liamorr24
+ * @author Jacob Schmidt & Liam Orr
  */
 public class Move {
     // instance variables

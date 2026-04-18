@@ -4,14 +4,20 @@
  */
 
 /**
- *
- * @author sydneys
+ *THE USER INTERFACE (GUI)
+ * This class handles the rendering of pieces and captures mouse clicks.
+ * @author Jacob Schmidt & Liam Orr
  */
 public class GameBoard extends javax.swing.JFrame {
-    
+    // LOGGER: This creates a system log specifically for the GameBoard class
+    // It's used to catch and record crashes without the program crashing
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(GameBoard.class.getName());
+    // Internal Grid: This 2D array mirrors the 64 JLabels on the screen
+    // So we can update them in loops rather than one by one.
     private javax.swing.JLabel[][] labelGrid = new javax.swing.JLabel[8][8];
     private GameLogic logic = new GameLogic();
+    // SELECTION TRACKERS: Used to remember which piece you clicked first.
+    // -1 means no piece is currently selected.
     private int selectedRow = -1;
     private int selectedColumn = -1;
 
@@ -20,23 +26,24 @@ public class GameBoard extends javax.swing.JFrame {
      */
     public GameBoard() {
         initComponents();
-        mapLabelsToGrid(); // map the labels into an array
+        mapLabelsToGrid(); // organize labels into the [8][8]
         
-        // This loop makes every square on your board clickable
+        // INTERACTIVITY: Attaches a mouse listener to every square
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
+                // Variables must be 'fina' to be used inside the Listener
                 final int row = r;
                 final int col = c;
                 labelGrid[r][c].addMouseListener(new java.awt.event.MouseAdapter() {
                     @Override
                     public void mouseClicked(java.awt.event.MouseEvent evt) {
-                        handleSquareClick(row, col);
+                        handleSquareClick(row, col); // Input for all game actions
                     }
                 });
             }
         }
         
-        refreshBoardDisplay();
+        refreshBoardDisplay(); // Initial draw of pieces on the board
     }
 
     /**
@@ -391,17 +398,24 @@ public class GameBoard extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    /**
+     * ARRAY MAPPING: This is the code that holds the labels together
+     * It takes the 64 JLabels out of the JPanel and organizes them into
+     * labelGrid[row][column]
+     */
     private void mapLabelsToGrid() {
-        // We fetch the components from the panel where you placed the 64 labels
+        // We fetch the components from the panel where we placed the 64 labels
         java.awt.Component[] allComponents = jPanel1.getComponents();
         int componentIndex = 0;
         
         for (int row = 0; row < 8; row++) {
             for (int column = 0; column < 8; column++) {
-                // Cast the generic component to a JLabel and store it in our 2D array
+                // Store the reference and set the background for 
+                // the checkerboard pattern
                 labelGrid[row][column] = (javax.swing.JLabel) allComponents[componentIndex++];
                 
                 // Visual Setup for the checkerboard pattern
+                // Tiles are black where (row + column) is odd.
                 if ((row + column) % 2 != 0) {
                     labelGrid[row][column].setBackground(java.awt.Color.DARK_GRAY);
                 } else {
@@ -411,6 +425,10 @@ public class GameBoard extends javax.swing.JFrame {
         }
     }
 
+    /**
+     * REDRAW: Syncs the UI with the Logic
+     * It checks GameLogic's array and updates icons/text for every label
+     */
     public void refreshBoardDisplay() {
         Piece[][] currentBoardState = logic.getBoard();
         for (int row = 0; row < 8; row++) {
@@ -418,34 +436,40 @@ public class GameBoard extends javax.swing.JFrame {
                 Piece pieceAtLocation = currentBoardState[row][column];
                 
                 if (pieceAtLocation != null) {
-                    // Update this path once your Krita assets are in your project folder
+                    // ASSET LOADING: Fetches the image based on piece colour/king
                     String imagePath = "/assets/" + pieceAtLocation.getIconName();
                     labelGrid[row][column].setIcon(new javax.swing.ImageIcon(getClass().getResource(imagePath)));
                     labelGrid[row][column].setText(pieceAtLocation.isRed() ? "RED" : "BLACK");
                 } else {
-                    labelGrid[row][column].setIcon(null);
+                    labelGrid[row][column].setIcon(null); // Clear image if tile is empty
                     labelGrid[row][column].setText("");
                 }
             }
         }
     }
     
+    /**
+     * INPUT HANDLING: The "Two-Click" System
+     * Click 1: Select a piece Click 2: Execute the move.
+     * @param currentRow
+     * @param currentColumn 
+     */
     private void handleSquareClick(int currentRow, int currentColumn) {
-        // First click: Selecting the piece
+        // STATE 1: If nothing is selected, try to pick up a piece
         if (selectedRow == -1) {
             Piece pieceAtClick = logic.getBoard()[currentRow][currentColumn];
-            
+            // VALIDATION: You can only pick your own team's pieces
             if (pieceAtClick != null && pieceAtClick.isRed() == logic.isRedTurn()) {
                 selectedRow = currentRow;
                 selectedColumn = currentColumn;
                 highlightValidMoves(currentRow, currentColumn);
             }
         } 
-        // Second click: Moving the piece
+        // STATE 2: A piece is already held, try to land it.
         else {
             java.util.List<java.awt.Point> validDestinations = logic.getValidDestinations(selectedRow, selectedColumn);
             boolean isMoveValid = false;
-
+            // Search the logic's list to see if the second click is a legal move
             for (java.awt.Point p : validDestinations) {
                 if (p.y == currentRow && p.x == currentColumn) {
                     isMoveValid = true;
@@ -455,12 +479,12 @@ public class GameBoard extends javax.swing.JFrame {
 
             if (isMoveValid) {
                 logic.movePiece(selectedRow, selectedColumn, currentRow, currentColumn);
-                logic.toggleTurn();
+                logic.toggleTurn(); // Switch players after successful action
                 refreshBoardDisplay();
             }
 
-            clearHighlights();
-            selectedRow = -1;
+            clearHighlights(); // Reset colours back to standard Gray/Dark Grey
+            selectedRow = -1; // Reset selection state for next turn
             selectedColumn = -1;
         }
     }
